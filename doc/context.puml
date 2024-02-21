@@ -1,0 +1,8 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+Person(user, "Пользователь")
+System(socialNetwork, "Социальная сеть", "Позволяет регистрироваться, создавать посты, смотреть чужие посты, ставить лайки, оставлять комментарии, смотреть статистику лайков и просмотров")
+
+Rel(user, socialNetwork, "Регистрируется, создает посты, пишет комментарии, ставит лайки")
+@enduml

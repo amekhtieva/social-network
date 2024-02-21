@@ -1,0 +1,37 @@
+@startuml
+entity "User" as user {
+  *user_id : int
+  ---
+  *username : string
+  *password : string
+}
+
+entity "Post" as post {
+  *post_id : int
+  ---
+  *user_id : int
+  content : string
+}
+
+entity "Comment" as comment {
+  *comment_id : int
+  ---
+  *user_id : int
+  *post_id : int
+  parent_comment_id : int
+  content : string
+}
+
+entity "Statistics" as stats {
+  *post_id : int
+  ---
+  views_count : int
+  likes_count : int
+}
+
+user ||--o{ post
+post ||--o{ comment
+comment |o--o{ comment : parent_comment_id
+post ||--|| stats
+user ||--o{ comment
+@enduml

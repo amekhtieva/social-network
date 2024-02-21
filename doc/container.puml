@@ -1,0 +1,30 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(user, "Пользователь")
+
+Container(main, "Основной сервис", "Go", "Отвечает за клиентское API и за регистрацию и аутентификацию пользователей")
+Container(statistics, "Сервис статистики", "Go", "Отвечает за подсчет лайков и просмотров")
+Container(postsAndComments, "Сервис постов и комментариев", "Go", "Обрабатывает посты и комментарии")
+
+Container(broker, "Брокер cообщений", "Kafka")
+Container(frontend, "Фронтенд", "", "Отвечает за пользовательский интерфейс")
+
+ContainerDb(dbStatistics, "Clickhouse", "Хранит информацию о лайках и просмотрах")
+ContainerDb(dbMain, "PostgreSQL", "Хранит данные пользователя")
+ContainerDb(dbPostsAndComments, "PostgreSQL", "Хранит посты и комментарии")
+
+Rel(user, frontend, "Использует приложение")
+
+Rel(frontend, main, "", "REST API")
+
+Rel(main, postsAndComments, "Отправляет посты, комментарии, лайки, просмотры", "gRPC")
+Rel(main, statistics, "Запрашивает статистику", "gRPC")
+
+Rel(main, dbMain, "Сохраняет данные о пользователе")
+Rel(statistics, dbStatistics, "Сохраняет статистику о лайках и просмотрах")
+Rel(postsAndComments, dbPostsAndComments, "Сохраняет данные о постах и комментариях")
+
+Rel(postsAndComments, broker, "Отправляет статистику о лайках и просмотрах")
+Rel(broker, statistics, "Пересылает статистику")
+@enduml

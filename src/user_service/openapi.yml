@@ -1,0 +1,102 @@
+openapi: 3.0.3
+info:
+  version: 1.0.0
+  title: User Service API
+paths:
+  /register:
+    post:
+      summary: Register a new user
+      operationId: registerUser
+      requestBody:
+        description: A JSON object containing username and password
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      responses:
+        '200':
+          description: User successfully registered
+        '400':
+          description: Bad Request
+        '409':
+          description: Username already exists
+  /login:
+    post:
+      summary: Log user into the system
+      operationId: loginUser
+      requestBody:
+        description: A JSON object containing username and password
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      responses:
+        '200':
+          description: User successfully authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationToken'
+        '403':
+          description: Incorrect username or password
+  /update:
+    put:
+      security:
+        - bearerAuth: []
+      summary: Update user information
+      operationId: updateUser
+      requestBody:
+        description: A JSON object containing user information
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInfo'
+        required: true
+      responses:
+        '200':
+          description: User information successfully updated
+        '400':
+          description: Bad Request
+        '401':
+          description: User unauthorized
+        '404':
+          description: User not found
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      required:
+        - username
+        - password
+      type: object
+      properties:
+        username: 
+          type: string
+        password: 
+          type: string
+    UserInfo:
+      type: object
+      properties:
+        firstName: 
+          type: string
+        lastName: 
+          type: string
+        dateOfBirth: 
+          type: string
+          format: date
+        mail: 
+          type: string
+          format: email
+        phone: 
+          type: string
+    AuthenticationToken:
+      type: object
+      properties:
+        token: 
+          type: string

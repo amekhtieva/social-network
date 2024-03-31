@@ -3,7 +3,7 @@ info:
   version: 1.0.0
   title: User Service API
 paths:
-  /register:
+  /user/register:
     post:
       summary: Register a new user
       operationId: registerUser
@@ -21,7 +21,7 @@ paths:
           description: Bad Request
         '409':
           description: Username already exists
-  /login:
+  /user/login:
     post:
       summary: Log user into the system
       operationId: loginUser
@@ -41,7 +41,7 @@ paths:
                 $ref: '#/components/schemas/AuthenticationToken'
         '403':
           description: Incorrect username or password
-  /update:
+  /user/update:
     put:
       security:
         - bearerAuth: []
@@ -57,6 +57,156 @@ paths:
       responses:
         '200':
           description: User information successfully updated
+        '400':
+          description: Bad Request
+        '401':
+          description: User unauthorized
+        '404':
+          description: User not found
+  /createPost:
+    post:
+      security:
+        - bearerAuth: []
+      summary: Create post
+      operationId: createPost
+      requestBody:
+        description: Post content
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+              required:
+                - content
+        required: true
+      responses:
+        '200':
+          description: Post successfully created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                required:
+                  - id
+        '400':
+          description: Bad Request
+        '401':
+          description: User unauthorized
+        '404':
+          description: User not found
+  /post/{id}:
+    put:
+      security:
+        - bearerAuth: []
+      summary: Update post
+      operationId: updatePost
+      parameters:
+        - name: id
+          in: path
+          description: Post id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        description: Post id and new content
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+              required:
+                - content
+        required: true
+      responses:
+        '200':
+          description: Post successfully updated
+        '400':
+          description: Bad Request
+        '401':
+          description: User unauthorized
+        '404':
+          description: User not found
+    delete:
+      security:
+        - bearerAuth: []
+      summary: Delete post
+      operationId: deletePost
+      parameters:
+        - name: id
+          in: path
+          description: Post id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Post successfully deleted
+        '400':
+          description: Bad Request
+        '401':
+          description: User unauthorized
+        '404':
+          description: User not found
+    get:
+      security:
+        - bearerAuth: []
+      summary: Get post
+      operationId: getPost
+      parameters:
+        - name: id
+          in: path
+          description: Post id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Post
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        '400':
+          description: Bad Request
+        '401':
+          description: User unauthorized
+        '404':
+          description: User not found
+  /listPosts:
+    get:
+      security:
+        - bearerAuth: []
+      summary: List posts
+      operationId: listPosts
+      parameters:
+        - name: limit
+          in: query
+          description: Limit of posts
+          required: true
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          description: Offset of posts
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Post'
         '400':
           description: Bad Request
         '401':
@@ -99,4 +249,17 @@ components:
       type: object
       properties:
         token: 
+          type: string
+    Post:
+      required:
+        - id
+        - username
+        - content
+      type: object
+      properties:
+        id: 
+          type: integer
+        username: 
+          type: string
+        content: 
           type: string

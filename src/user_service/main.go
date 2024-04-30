@@ -1,189 +1,39 @@
 package main
 
 import (
-	"crypto/md5"
 	"crypto/rsa"
 	"database/sql"
-	"encoding/hex"
-	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
  	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	_ "github.com/lib/pq"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
+	pb "user_service/proto"
 )
 
-type User struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-type UserInfo struct {
-	FirstName   string `json:"firstName"`
-	LastName    string `json:"lastName"`
-	DateOfBirth string `json:"dateOfBirth"`
-	Mail       string `json:"email"`
-	Phone       string `json:"phone"`
-}
-
-type AuthenticationToken struct {
-	Token string `json:"token"`
-}
-
 var db *sql.DB
+
+var postServiceClient pb.PostServiceClient
+
 var publicKey  *rsa.PublicKey
 var privateKey *rsa.PrivateKey
 
-func hashPassword(username string, password string) string {
-	hash := md5.Sum([]byte(username + password))
-	return hex.EncodeToString(hash[:])
+func ConnectToPostService(addr string) error {
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return err
+	}
+	postServiceClient = pb.NewPostServiceClient(conn)
+	return nil
 }
-
-func registerUser(w http.ResponseWriter, req *http.Request) {
-	body := make([]byte, req.ContentLength)
-	_, err := req.Body.Read(body)
-	defer req.Body.Close()
-	if err != io.EOF {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	user := User{}
-	err = json.Unmarshal(body, &user)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	var exists bool
-    db.QueryRow("SELECT exists (SELECT 1 FROM users WHERE username=$1)", user.Username).Scan(&exists)
-    if exists {
-        http.Error(w, "Username already exists", http.StatusConflict)
-        return
-    }
-
-	passwordHash := hashPassword(user.Username, user.Password)
-	_, err = db.Exec("INSERT INTO users(username, password) VALUES($1, $2)", user.Username, passwordHash)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-}
-
-func loginUser(w http.ResponseWriter, req *http.Request) {
-	body := make([]byte, req.ContentLength)
-	_, err := req.Body.Read(body)
-	defer req.Body.Close()
-	if err != io.EOF {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	user := User{}
-	err = json.Unmarshal(body, &user)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	var dbUser User
-    err = db.QueryRow("SELECT username, password FROM users WHERE username=$1",
-		user.Username).Scan(&dbUser.Username, &dbUser.Password)
-    if err != nil {
-        http.Error(w, "Incorrect username or password", http.StatusForbidden)
-        return
-    }
-
-	if dbUser.Password != hashPassword(user.Username, user.Password) {
-		http.Error(w, "Incorrect username or password", http.StatusForbidden)
-		return
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-		"username": user.Username,
-	})
-
-	tokenString, err := token.SignedString(privateKey)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error signing token: %s", err.Error()), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(AuthenticationToken{Token: tokenString})
-}
-
-func updateUser(w http.ResponseWriter, req *http.Request) {
-	authHeader := req.Header.Get("Authorization")
-	if authHeader == "" {
-        http.Error(w, "No authentication token in header", http.StatusUnauthorized)
-        return
-    }
-	jwtToken := strings.TrimPrefix(authHeader, "Bearer ")
-
-    token, err := jwt.Parse(jwtToken, func(token *jwt.Token) (interface{}, error) {
-		_, ok := token.Method.(*jwt.SigningMethodRSA)
-        if !ok {
-            return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-        }
-        return publicKey, nil
-    })
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-        return
-    }
-	if !token.Valid {
-		http.Error(w, "Invalid authentication token", http.StatusUnauthorized)
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-    if !ok {
-		http.Error(w, "Invalid authentication token", http.StatusUnauthorized)
-		return
-    }
-
-	username := claims["username"].(string)
-
-	body := make([]byte, req.ContentLength)
-	_, err = req.Body.Read(body)
-	defer req.Body.Close()
-	if err != io.EOF {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	userInfo := UserInfo{}
-	err = json.Unmarshal(body, &userInfo)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	var dbUsername string
-    err = db.QueryRow("SELECT username FROM users WHERE username=$1", username).Scan(&dbUsername)
-    if err != nil {
-        http.Error(w, "User not found", http.StatusNotFound)
-        return
-    }
-
-	_, err = db.Exec("UPDATE users SET firstname=$1, lastname=$2, dateofbirth=$3, mail=$4, phone=$5 WHERE username=$6",
-		userInfo.FirstName, userInfo.LastName, userInfo.DateOfBirth, userInfo.Mail, userInfo.Phone, username)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to update user: %s", err.Error()), http.StatusBadRequest)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-}   
 
 func main() {
 	privateFile := flag.String("private", "", "path to JWT private key `file`")
@@ -194,6 +44,7 @@ func main() {
 	dbName := flag.String("db-name", "", "database name")
 	dbUsername := flag.String("db-username", "", "database user")
 	dbPassword := flag.String("db-password", "", "database password")
+	postServerAddr := flag.String("post-server-addr", "", "address of the gRPC post server")
 
 	flag.Parse()
 
@@ -227,6 +78,11 @@ func main() {
 	}
 	if dbPassword == nil || *dbPassword == ""  {
 		fmt.Fprintln(os.Stderr, "Please provide a database password")
+		os.Exit(1)
+	}
+
+	if postServerAddr == nil || *postServerAddr == ""  {
+		fmt.Fprintln(os.Stderr, "Please provide a database post server address")
 		os.Exit(1)
 	}
 
@@ -316,11 +172,23 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	err = ConnectToPostService(*postServerAddr)
+	if err != nil {
+		panic(err)
+	}
 	
 	r := mux.NewRouter()
-	r.HandleFunc("/register", registerUser).Methods("POST")
-	r.HandleFunc("/login", loginUser).Methods("POST")
-	r.HandleFunc("/update", updateUser).Methods("PUT")
+
+	r.HandleFunc("/user/register", RegisterUser).Methods("POST")
+	r.HandleFunc("/user/login", LoginUser).Methods("POST")
+	r.HandleFunc("/user/update", UpdateUser).Methods("PUT")
+
+	r.HandleFunc("/createPost", CreatePost).Methods("POST")
+	r.HandleFunc("/post/{id}", UpdatePost).Methods("PUT")
+	r.HandleFunc("/post/{id}", DeletePost).Methods("DELETE")
+	r.HandleFunc("/post/{id}", GetPost).Methods("GET")
+	r.HandleFunc("/listPosts", ListPosts).Methods("GET")
 
 	err = http.ListenAndServe(fmt.Sprintf(":%d", *port), r)
 	if err != nil {

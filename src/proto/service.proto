@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+option go_package = "./;proto";
+
+import "google/protobuf/empty.proto";
+
+service PostService {
+    rpc CreatePost(CreatePostRequest) returns (CreatePostResponse);
+    rpc UpdatePost(UpdatePostRequest) returns (google.protobuf.Empty);
+    rpc DeletePost(DeletePostRequest) returns (google.protobuf.Empty);
+    rpc GetPost(GetPostRequest) returns (GetPostResponse);
+    rpc ListPosts(ListPostsRequest) returns (ListPostsResponse);
+}
+
+message CreatePostRequest {
+    string Username = 1;
+    string Content = 2;
+}
+
+message UpdatePostRequest {
+    uint64 Id = 1;
+    string Username = 2;
+    string Content = 3;
+}
+
+message DeletePostRequest {
+    uint64 Id = 1;
+    string Username = 2;
+}
+
+message GetPostRequest {
+    uint64 Id = 1;
+    string Username = 2;
+}
+
+message ListPostsRequest {
+    uint64 Limit = 1;
+    uint64 Offset = 2;
+}
+
+message CreatePostResponse {
+    uint64 PostId = 1;
+}
+
+message Post {
+    uint64 Id = 1;
+    string Username = 2;
+    string Content = 3;
+}
+
+message GetPostResponse {
+    Post Post = 1;
+}
+
+message ListPostsResponse {
+    repeated Post Posts = 1;
+}

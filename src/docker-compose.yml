@@ -1,9 +1,38 @@
 services:
-  db:
+  post_db:
     image: postgres
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: pass
+      POSTGRES_DB: postdb
+    ports:
+      - 5433:5432
+
+  post_service:
+    build: ./post_service
+    restart: unless-stopped
+    depends_on:
+      - post_db
+    ports:
+      - 8090:8090
+    volumes:
+      - ./user_service/signature.pem:/tmp/signature.pem
+      - ./user_service/signature.pub:/tmp/signature.pub
+    command: [
+        "--port", "8090",
+        "--db-host", "post_db",
+        "--db-port", "5432",
+        "--db-username", "postgres",
+        "--db-password", "pass",
+        "--db-name", "postdb",
+      ]
+
+  user_db:
+    image: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: userdb
     ports:
       - 5432:5432
 
@@ -11,7 +40,8 @@ services:
     build: ./user_service
     restart: unless-stopped
     depends_on:
-      - db
+      - user_db
+      - post_service
     ports:
       - 8080:8080
     volumes:
@@ -21,9 +51,10 @@ services:
         "--private", "/tmp/signature.pem",
         "--public", "/tmp/signature.pub",
         "--port", "8080",
-        "--db-host", "db",
+        "--db-host", "user_db",
         "--db-port", "5432",
         "--db-username", "postgres",
         "--db-password", "pass",
-        "--db-name", "postgresdb",
+        "--db-name", "userdb",
+        "--post-server-addr", "post_service:8090"
       ]

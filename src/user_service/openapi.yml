@@ -63,7 +63,7 @@ paths:
           description: User unauthorized
         '404':
           description: User not found
-  /createPost:
+  /post:
     post:
       security:
         - bearerAuth: []
@@ -179,7 +179,7 @@ paths:
           description: User unauthorized
         '404':
           description: User not found
-  /listPosts:
+  /posts:
     get:
       security:
         - bearerAuth: []

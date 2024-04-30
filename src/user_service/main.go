@@ -184,11 +184,11 @@ func main() {
 	r.HandleFunc("/user/login", LoginUser).Methods("POST")
 	r.HandleFunc("/user/update", UpdateUser).Methods("PUT")
 
-	r.HandleFunc("/createPost", CreatePost).Methods("POST")
+	r.HandleFunc("/post", CreatePost).Methods("POST")
 	r.HandleFunc("/post/{id}", UpdatePost).Methods("PUT")
 	r.HandleFunc("/post/{id}", DeletePost).Methods("DELETE")
 	r.HandleFunc("/post/{id}", GetPost).Methods("GET")
-	r.HandleFunc("/listPosts", ListPosts).Methods("GET")
+	r.HandleFunc("/posts", ListPosts).Methods("GET")
 
 	err = http.ListenAndServe(fmt.Sprintf(":%d", *port), r)
 	if err != nil {

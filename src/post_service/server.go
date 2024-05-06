@@ -84,10 +84,6 @@ func (s *Server) GetPost(ctx context.Context, req *pb.GetPostRequest) (*pb.GetPo
 		}
 	}
 
-	if post.Username != req.Username {
-		return nil, errors.New("Only the creator can get the post")
-	}
-
 	return &pb.GetPostResponse{
 		Post: &pb.Post{
 			Id:      post.Id,

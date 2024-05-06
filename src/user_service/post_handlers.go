@@ -177,7 +177,6 @@ func GetPost(w http.ResponseWriter, req *http.Request) {
 
 	grpcReq := &pb.GetPostRequest{
 		Id:		  postId,
-		Username: username,
 	}
 	
 	resp, err := postServiceClient.GetPost(context.Background(), grpcReq)

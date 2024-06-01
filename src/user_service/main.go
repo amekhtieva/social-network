@@ -13,6 +13,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
+	"github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -25,6 +26,9 @@ var postServiceClient pb.PostServiceClient
 
 var publicKey  *rsa.PublicKey
 var privateKey *rsa.PrivateKey
+
+var kafkaLikeWriter *kafka.Writer
+var kafkaViewWriter *kafka.Writer
 
 func ConnectToPostService(addr string) error {
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -45,6 +49,7 @@ func main() {
 	dbUsername := flag.String("db-username", "", "database user")
 	dbPassword := flag.String("db-password", "", "database password")
 	postServerAddr := flag.String("post-server-addr", "", "address of the gRPC post server")
+	kafkaURL := flag.String("kafka-url", "", "address of the Kafka")
 
 	flag.Parse()
 
@@ -83,6 +88,11 @@ func main() {
 
 	if postServerAddr == nil || *postServerAddr == ""  {
 		fmt.Fprintln(os.Stderr, "Please provide a database post server address")
+		os.Exit(1)
+	}
+
+	if kafkaURL == nil || *kafkaURL == ""  {
+		fmt.Fprintln(os.Stderr, "Please provide Kafka address")
 		os.Exit(1)
 	}
 
@@ -177,7 +187,19 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	
+
+	kafkaLikeWriter = &kafka.Writer{
+		Addr:     kafka.TCP(*kafkaURL),
+		Topic:    "likes",
+	}
+	defer kafkaLikeWriter.Close()
+
+	kafkaViewWriter = &kafka.Writer{
+		Addr:     kafka.TCP(*kafkaURL),
+		Topic:    "views",
+	}
+	defer kafkaViewWriter.Close()
+
 	r := mux.NewRouter()
 
 	r.HandleFunc("/user/register", RegisterUser).Methods("POST")
@@ -189,6 +211,9 @@ func main() {
 	r.HandleFunc("/post/{id}", DeletePost).Methods("DELETE")
 	r.HandleFunc("/post/{id}", GetPost).Methods("GET")
 	r.HandleFunc("/posts", ListPosts).Methods("GET")
+
+	r.HandleFunc("/post/{id}/like", Like).Methods("POST")
+	r.HandleFunc("/post/{id}/view", View).Methods("POST")
 
 	err = http.ListenAndServe(fmt.Sprintf(":%d", *port), r)
 	if err != nil {

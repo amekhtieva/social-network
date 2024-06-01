@@ -1,4 +1,46 @@
 services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 2181:2181
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - 9092:9092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  statistics_db:
+    image: yandex/clickhouse-server:latest
+    restart: unless-stopped
+    ports:
+      - 9000:9000
+      - 8123:8123
+
+  statistics_service:
+    build: ./statistics_service
+    restart: unless-stopped
+    depends_on:
+      - kafka
+      - statistics_db
+    ports:
+      - 8100:8100
+    command: [
+        "--port", "8100",
+        "--db-address", "http://statistics_db:8123?debug=true",
+        "--db-name", "statisticsdb",
+        "--kafka-url", "kafka:9092",
+      ]
+
   post_db:
     image: postgres
     restart: unless-stopped
@@ -15,9 +57,6 @@ services:
       - post_db
     ports:
       - 8090:8090
-    volumes:
-      - ./user_service/signature.pem:/tmp/signature.pem
-      - ./user_service/signature.pub:/tmp/signature.pub
     command: [
         "--port", "8090",
         "--db-host", "post_db",
@@ -40,8 +79,10 @@ services:
     build: ./user_service
     restart: unless-stopped
     depends_on:
+      - kafka
       - user_db
       - post_service
+      - statistics_service
     ports:
       - 8080:8080
     volumes:
@@ -56,5 +97,6 @@ services:
         "--db-username", "postgres",
         "--db-password", "pass",
         "--db-name", "userdb",
-        "--post-server-addr", "post_service:8090"
+        "--post-server-addr", "post_service:8090",
+        "--kafka-url", "kafka:9092"
       ]

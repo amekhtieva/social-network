@@ -5,6 +5,7 @@ COPY proto/ proto/
 COPY authentication.go authentication.go
 COPY main.go main.go
 COPY post_handlers.go post_handlers.go
+COPY statistics_handlers.go statistics_handlers.go
 COPY user_handlers.go user_handlers.go
 COPY go.mod go.mod
 

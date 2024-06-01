@@ -213,6 +213,36 @@ paths:
           description: User unauthorized
         '404':
           description: User not found
+  /post/{id}/like:
+    post:
+      security:
+        - bearerAuth: []
+      summary: Like post
+      operationId: likePost
+      responses:
+        '200':
+          description: Post successfully liked
+        '400':
+          description: Bad Request
+        '401':
+          description: User unauthorized
+        '404':
+          description: User not found
+  /post/{id}/view:
+    post:
+      security:
+        - bearerAuth: []
+      summary: View post
+      operationId: viewPost
+      responses:
+        '200':
+          description: Post successfully viewed
+        '400':
+          description: Bad Request
+        '401':
+          description: User unauthorized
+        '404':
+          description: User not found
 components:
   securitySchemes:
     bearerAuth:

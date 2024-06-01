@@ -30,7 +30,6 @@ message DeletePostRequest {
 
 message GetPostRequest {
     uint64 Id = 1;
-    string Username = 2;
 }
 
 message ListPostsRequest {

@@ -213,19 +213,12 @@ paths:
           description: User unauthorized
         '404':
           description: User not found
-  /like:
+  /post/{id}/like:
     post:
       security:
         - bearerAuth: []
       summary: Like post
       operationId: likePost
-      parameters:
-        - name: post
-          in: query
-          description: Post id
-          required: true
-          schema:
-            type: integer
       responses:
         '200':
           description: Post successfully liked
@@ -235,19 +228,12 @@ paths:
           description: User unauthorized
         '404':
           description: User not found
-  /view:
+  /post/{id}/view:
     post:
       security:
         - bearerAuth: []
       summary: View post
       operationId: viewPost
-      parameters:
-        - name: post
-          in: query
-          description: Post id
-          required: true
-          schema:
-            type: integer
       responses:
         '200':
           description: Post successfully viewed

@@ -54,10 +54,10 @@ func CreateDatabase(dbAddress string, dbName string) error {
 
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS likes (
-			postId 	 INT NOT NULL,
-			username TEXT NOT NULL,
-			PRIMARY KEY (postId, username)
-		) engine=ReplacingMergeTree
+			postId 	 UInt64,
+			username String
+		) ENGINE = ReplacingMergeTree()
+		ORDER BY (postId, username)
 	`)
 	if err != nil {
 	 	return err
@@ -65,10 +65,10 @@ func CreateDatabase(dbAddress string, dbName string) error {
 
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS views (
-			postId 	 INT NOT NULL,
-			username TEXT NOT NULL,
-			PRIMARY KEY (postId, username)
-		) engine=ReplacingMergeTree
+			postId 	 UInt64,
+			username String
+		) ENGINE = ReplacingMergeTree()
+		ORDER BY (postId, username)
 	`)
 	if err != nil {
 	 	return err

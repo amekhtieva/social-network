@@ -212,8 +212,8 @@ func main() {
 	r.HandleFunc("/post/{id}", GetPost).Methods("GET")
 	r.HandleFunc("/posts", ListPosts).Methods("GET")
 
-	r.HandleFunc("/like", Like).Methods("POST")
-	r.HandleFunc("/view", View).Methods("POST")
+	r.HandleFunc("/post/{id}/like", Like).Methods("POST")
+	r.HandleFunc("/post/{id}/view", View).Methods("POST")
 
 	err = http.ListenAndServe(fmt.Sprintf(":%d", *port), r)
 	if err != nil {

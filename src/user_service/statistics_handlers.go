@@ -28,9 +28,10 @@ func Like(w http.ResponseWriter, req *http.Request) {
         return
     }
 
+	params := mux.Vars(req)
 	event := Event{
 		Username: username,
-		PostId:   req.URL.Query().Get("post"),
+		PostId:   params["id"],
 	}
 
 	msg, err := json.Marshal(event)
@@ -64,9 +65,10 @@ func View(w http.ResponseWriter, req *http.Request) {
         return
     }
 
+	params := mux.Vars(req)
 	event := Event{
 		Username: username,
-		PostId:   req.URL.Query().Get("post"),
+		PostId:   params["id"],
 	}
 
 	msg, err := json.Marshal(event)

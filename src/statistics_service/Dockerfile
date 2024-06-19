@@ -1,6 +1,7 @@
 FROM golang:1.22-alpine
 
 WORKDIR /src/statistics_service
+COPY proto/ proto/
 COPY main.go main.go
 COPY server.go server.go
 COPY go.mod go.mod

@@ -23,6 +23,7 @@ import (
 var db *sql.DB
 
 var postServiceClient pb.PostServiceClient
+var statisticsServiceClient pb.StatisticsServiceClient
 
 var publicKey  *rsa.PublicKey
 var privateKey *rsa.PrivateKey
@@ -39,6 +40,15 @@ func ConnectToPostService(addr string) error {
 	return nil
 }
 
+func ConnectToStatisticsService(addr string) error {
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return err
+	}
+	statisticsServiceClient = pb.NewStatisticsServiceClient(conn)
+	return nil
+}
+
 func main() {
 	privateFile := flag.String("private", "", "path to JWT private key `file`")
 	publicFile := flag.String("public", "", "path to JWT public key `file`")
@@ -49,6 +59,7 @@ func main() {
 	dbUsername := flag.String("db-username", "", "database user")
 	dbPassword := flag.String("db-password", "", "database password")
 	postServerAddr := flag.String("post-server-addr", "", "address of the gRPC post server")
+	statisticsServerAddr := flag.String("statistics-server-addr", "", "address of the gRPC statistics server")
 	kafkaURL := flag.String("kafka-url", "", "address of the Kafka")
 
 	flag.Parse()
@@ -87,7 +98,12 @@ func main() {
 	}
 
 	if postServerAddr == nil || *postServerAddr == ""  {
-		fmt.Fprintln(os.Stderr, "Please provide a database post server address")
+		fmt.Fprintln(os.Stderr, "Please provide post server address")
+		os.Exit(1)
+	}
+
+	if statisticsServerAddr == nil || *statisticsServerAddr == ""  {
+		fmt.Fprintln(os.Stderr, "Please provide statistics server address")
 		os.Exit(1)
 	}
 
@@ -188,6 +204,11 @@ func main() {
 		panic(err)
 	}
 
+	err = ConnectToStatisticsService(*statisticsServerAddr)
+	if err != nil {
+		panic(err)
+	}
+
 	kafkaLikeWriter = &kafka.Writer{
 		Addr:     kafka.TCP(*kafkaURL),
 		Topic:    "likes",
@@ -214,6 +235,10 @@ func main() {
 
 	r.HandleFunc("/post/{id}/like", Like).Methods("POST")
 	r.HandleFunc("/post/{id}/view", View).Methods("POST")
+
+	r.HandleFunc("/post/{id}/statistics", GetPostStatistics).Methods("GET")
+	r.HandleFunc("/posts/top", GetTopPosts).Methods("GET")
+	r.HandleFunc("/users/top", GetTopUsers).Methods("GET")
 
 	err = http.ListenAndServe(fmt.Sprintf(":%d", *port), r)
 	if err != nil {

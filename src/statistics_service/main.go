@@ -5,12 +5,16 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"net"
 	"os"
 	"time"
 
 	_ "github.com/lib/pq"
 	_ "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/gorilla/mux"
+	"google.golang.org/grpc"
+
+	pb "statistics_service/proto"
 )
 
 var db *sql.DB
@@ -55,6 +59,7 @@ func CreateDatabase(dbAddress string, dbName string) error {
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS likes (
 			postId 	 UInt64,
+			author 	 String,
 			username String
 		) ENGINE = ReplacingMergeTree()
 		ORDER BY (postId, username)
@@ -66,6 +71,7 @@ func CreateDatabase(dbAddress string, dbName string) error {
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS views (
 			postId 	 UInt64,
+			author 	 String,
 			username String
 		) ENGINE = ReplacingMergeTree()
 		ORDER BY (postId, username)
@@ -78,15 +84,20 @@ func CreateDatabase(dbAddress string, dbName string) error {
 }
 
 func main() {
-	port := flag.Int("port", 8090, "http server port")
+	httpPort := flag.Int("http-port", 8200, "http server port")
+	grpcPort := flag.Int("grpc-port", 8300, "grpc server port")
 	dbAddress := flag.String("db-address", "", "address of the database")
 	dbName := flag.String("db-name", "", "database name")
 	kafkaURL := flag.String("kafka-url", "", "address of the Kafka")
 
 	flag.Parse()
 
-	if port == nil {
-		fmt.Fprintln(os.Stderr, "Port is required")
+	if httpPort == nil {
+		fmt.Fprintln(os.Stderr, "HTTP port is required")
+		os.Exit(1)
+	}
+	if grpcPort == nil {
+		fmt.Fprintln(os.Stderr, "gRPC port is required")
 		os.Exit(1)
 	}
 	if dbAddress == nil || *dbAddress == "" {
@@ -114,8 +125,25 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/ping", Ping).Methods("GET")
 
-	err = http.ListenAndServe(fmt.Sprintf(":%d", *port), r)
+	go func() {
+		err = http.ListenAndServe(fmt.Sprintf(":%d", *httpPort), r)
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	grpc_server := grpc.NewServer()
+	pb.RegisterStatisticsServiceServer(grpc_server, nil)
+
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", *grpcPort))
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("Failed to listen on port %d: %s", *grpcPort, err.Error()))
 	}
+
+	go func() {
+		err = grpc_server.Serve(listener)
+		if err != nil {
+			panic("Failed to serve: " + err.Error())
+		}
+	}()
 }

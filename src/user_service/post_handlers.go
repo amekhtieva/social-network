@@ -202,8 +202,6 @@ func ListPosts(w http.ResponseWriter, req *http.Request) {
         return
     }
 
-	fmt.Println(fmt.Sprintf("queryyyy %s", req.URL.Query()))
-
 	limitStr := req.URL.Query().Get("limit")
 	limit, err := strconv.ParseUint(limitStr, 10, 64)
 	if err != nil {

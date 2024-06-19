@@ -35,7 +35,8 @@ services:
     ports:
       - 8100:8100
     command: [
-        "--port", "8100",
+        "--http-port", "8100",
+        "--grpc-port", "8200",
         "--db-address", "http://statistics_db:8123?debug=true",
         "--db-name", "statisticsdb",
         "--kafka-url", "kafka:9092",
@@ -98,5 +99,6 @@ services:
         "--db-password", "pass",
         "--db-name", "userdb",
         "--post-server-addr", "post_service:8090",
-        "--kafka-url", "kafka:9092"
+        "--kafka-url", "kafka:9092",
+        "--statistics-server-addr", "statistics_service:8200"
       ]

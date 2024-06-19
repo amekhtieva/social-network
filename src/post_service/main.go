@@ -48,7 +48,7 @@ func CreateDatabase(dbInfo string, dbName string) error {
 }   
 
 func main() {
-	port := flag.Int("port", 8090, "http server port")
+	port := flag.Int("port", 8090, "grpc server port")
 	dbHost := flag.String("db-host", "", "hostname of the database")
 	dbPort := flag.Int("db-port", 5433, "port of the database")
 	dbName := flag.String("db-name", "", "database name")

@@ -19,6 +19,10 @@ import (
 
 var db *sql.DB
 
+type Server struct {
+	pb.UnimplementedStatisticsServiceServer
+}
+
 func Ping(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
@@ -133,17 +137,15 @@ func main() {
 	}()
 
 	grpc_server := grpc.NewServer()
-	pb.RegisterStatisticsServiceServer(grpc_server, nil)
+	pb.RegisterStatisticsServiceServer(grpc_server, &Server{})
 
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", *grpcPort))
 	if err != nil {
 		panic(fmt.Sprintf("Failed to listen on port %d: %s", *grpcPort, err.Error()))
 	}
 
-	go func() {
-		err = grpc_server.Serve(listener)
-		if err != nil {
-			panic("Failed to serve: " + err.Error())
-		}
-	}()
+	err = grpc_server.Serve(listener)
+	if err != nil {
+		panic("Failed to serve: " + err.Error())
+	}
 }

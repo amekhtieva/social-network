@@ -56,7 +56,7 @@ func ConsumeEvents(topic string, kafkaURL string) {
 	}
 }
 
-func GetPostStatistics(
+func (s *Server) GetPostStatistics(
 	ctx context.Context,
 	req *pb.GetPostStatisticsRequest,
 ) (*pb.GetPostStatisticsResponse, error) {
@@ -81,7 +81,7 @@ func GetPostStatistics(
 	return &postStatistics, nil
 }
 
-func GetTopPosts(
+func (s *Server) GetTopPosts(
 	ctx context.Context,
 	req *pb.GetTopPostsRequest,
 ) (*pb.GetTopPostsResponse, error) {
@@ -126,7 +126,7 @@ func GetTopPosts(
 	return &pb.GetTopPostsResponse{Posts: posts}, nil
 }
 
-func GetTopUsers(
+func (s *Server) GetTopUsers(
 	ctx context.Context,
 	req *empty.Empty,
 ) (*pb.GetTopUsersResponse, error) {

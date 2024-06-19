@@ -243,6 +243,104 @@ paths:
           description: User unauthorized
         '404':
           description: User not found
+  /post/{id}/statistics:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Get post statistics
+      operationId: getPostStatistics
+      responses:
+        '200':
+          description: Post statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  likes:
+                    type: integer
+                  views:
+                    type: integer
+                required:
+                  - likes
+                  - views
+        '400':
+          description: Bad Request
+        '401':
+          description: User unauthorized
+        '404':
+          description: User not found
+  /posts/top:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Get top posts by likes or views
+      operationId: getTopPosts
+      parameters:
+        - name: by
+          in: query
+          description: Sort type
+          required: true
+          schema:
+            type: string
+            enum:
+              - likes
+              - views
+      responses:
+        '200':
+          description: Top posts
+          content:
+            application/json:
+              schema:
+              type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    author:
+                      type: string
+                    statistics:
+                        type: integer
+                  required:
+                    - id
+                    - author
+                    - statistics
+        '400':
+          description: Bad Request
+        '401':
+          description: User unauthorized
+        '404':
+          description: User not found
+  /users/top:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Get top users by likes
+      operationId: getTopUsers
+      responses:
+        '200':
+          description: Top users
+          content:
+            application/json:
+              schema:
+              type: array
+                items:
+                  type: object
+                  properties:
+                    username:
+                      type: string
+                    likes:
+                      type: integer
+                  required:
+                    - username
+                    - likes
+        '400':
+          description: Bad Request
+        '401':
+          description: User unauthorized
+        '404':
+          description: User not found
 components:
   securitySchemes:
     bearerAuth:
